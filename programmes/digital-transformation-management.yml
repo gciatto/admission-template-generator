@@ -1,0 +1,120 @@
+programme:
+  slug: digital-transformation-management
+  name: Digital Transformation Management
+  institution: Alma Mater Studiorum — Università di Bologna
+  topics:
+  - computer science
+  - business
+  - economics
+  - digital transformation
+degree_classes:
+- name: Economics & business
+  description: Administration, accounting, finance, business management, economic theory and markets.
+  codes:
+  - code: L-16
+    en: Administration and organisation sciences
+    it: Scienze dell'amministrazione e dell'organizzazione
+  - code: L-18
+    en: Economics and business management sciences
+    it: Scienze dell'economia e della gestione aziendale
+  - code: L-33
+    en: Economic sciences
+    it: Scienze economiche
+- name: Statistics
+  description: Probability, statistical inference, data analysis and statistical modelling.
+  codes:
+  - code: L-41
+    en: Statistics
+    it: Statistica
+- name: Computing & information engineering
+  description: Programming, algorithms, software, databases, computer systems, electronics, telecommunications
+    and automation.
+  codes:
+  - code: L-31
+    en: Computer science and technologies
+    it: Scienze e tecnologie informatiche
+  - code: L-8
+    en: Information engineering
+    it: Ingegneria dell'informazione
+- name: Industrial engineering
+  description: Mechanical, energy, manufacturing, chemical and other industrial engineering.
+  codes:
+  - code: L-9
+    en: Industrial engineering
+    it: Ingegneria industriale
+exam_sectors:
+- name: Business & management
+  description: Accounting, company administration, strategy, marketing, operations, corporate finance,
+    organisation, human resources, banking and financial institutions.
+  codes:
+  - code: SECS-P/07
+    en: Business administration and accounting
+    it: Economia aziendale
+  - code: SECS-P/08
+    en: Management
+    it: Economia e gestione delle imprese
+  - code: SECS-P/09
+    en: Corporate finance
+    it: Finanza aziendale
+  - code: SECS-P/10
+    en: Organisation and human resources
+    it: Organizzazione aziendale
+  - code: SECS-P/11
+    en: Financial markets and institutions
+    it: Economia degli intermediari finanziari
+- name: Computer science
+  description: Programming, algorithms, software engineering, databases, AI, computer architecture and
+    information processing systems.
+  codes:
+  - code: INF/01
+    en: Computer science
+    it: Informatica
+  - code: ING-INF/05
+    en: Information processing systems
+    it: Sistemi di elaborazione delle informazioni
+- name: Economics
+  description: Microeconomics, macroeconomics, economic policy, taxation, public spending, econometrics
+    and economic history.
+  codes:
+  - code: SECS-P/01
+    en: Economics
+    it: Economia politica
+  - code: SECS-P/02
+    en: Economic policy
+    it: Politica economica
+  - code: SECS-P/03
+    en: Public economics
+    it: Scienza delle finanze
+  - code: SECS-P/05
+    en: Econometrics
+    it: Econometria
+  - code: SECS-P/12
+    en: Economic history
+    it: Storia economica
+colors:
+  palette:
+    input: '#FFF2A6'
+    guidance: '#DBEAFE'
+    example: '#FCE7F3'
+    formula: '#E8EDF2'
+    header: '#23374D'
+    text: '#172033'
+    header_text: '#FFFFFF'
+    muted_text: '#334155'
+    secondary_text: '#475569'
+    error_fill: '#FCE3E3'
+    error_text: '#9C1C23'
+    border: '#AAB6C4'
+  tabs:
+    Instructions: '#334155'
+    Personal & contacts: '#2563EB'
+    Degrees: '#7C3AED'
+    Exams: '#9333EA'
+    Work experience: '#0F766E'
+    Language skills: '#C2410C'
+    Internationalization: '#BE185D'
+    Training: '#4D7C0F'
+    Other activities: '#A16207'
+    Degree class legend: '#64748B'
+    Exam sector legend: '#475569'
+    Lists: '#94A3B8'

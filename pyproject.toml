@@ -1,0 +1,65 @@
+[project]
+name = "admission-template-generator"
+version = "0.1.0"
+description = "Generate protected applicant evidence workbooks for master's admissions"
+readme = "README.md"
+authors = [
+    { name = "Giovanni Ciatto", email = "giovanni.ciatto@unibo.it" }
+]
+requires-python = ">=3.11" # Update workflows/check.yml if you change this
+dependencies = [
+    "openpyxl==3.1.5",
+    "pyyaml==6.0.3",
+]
+
+# Not a distributable package: generate.py is run directly.
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "coverage>=7.14.0",
+    "mypy>=2.1.0",
+    "poethepoet>=0.45.0",
+    "pytest>=9.0.3",
+    "ruff>=0.15.12",
+    "types-openpyxl",
+    "types-pyyaml",
+]
+
+[tool.poe.tasks]
+generate = "python generate.py programmes/*.y*ml --ods"
+generate-xlsx = "python generate.py programmes/*.y*ml"
+test = "pytest"
+coverage = "coverage run -m pytest"
+coverage-report = "coverage report -m"
+coverage-html = "coverage html"
+ruff-check = "ruff check"
+ruff-fix = "ruff check --fix"
+format = "ruff format"
+format-check = "ruff format --check"
+mypy = "mypy generate.py tests scripts"
+compile = "python -m compileall -q generate.py tests scripts"
+static-checks = [
+    "compile",
+    "format-check",
+    "ruff-check",
+    "mypy",
+]
+static-fixes = [
+    "ruff-fix",
+    "format",
+]
+# Local, untracked Git hooks; append hook names to pick some (pre-commit,
+# conventional-commits, no-ai-signature, pre-push)
+install-hooks = "python scripts/githooks.py install"
+uninstall-hooks = "python scripts/githooks.py uninstall"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["tools/original"]
