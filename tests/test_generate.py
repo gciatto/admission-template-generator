@@ -26,7 +26,7 @@ class GeneratorTests(unittest.TestCase):
 
     def write_config(self, config):
         path = self.root / "custom.yml"
-        path.write_text(yaml.safe_dump(config, allow_unicode=True))
+        path.write_text(yaml.safe_dump(config, allow_unicode=True), encoding="utf-8")
         return path
 
     def test_preserve_all_formulas_and_cell_protection(self):
