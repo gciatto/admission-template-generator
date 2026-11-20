@@ -30,6 +30,7 @@ dev = [
 [tool.poe.tasks]
 generate = "python generate.py programmes/*.y*ml --ods"
 generate-xlsx = "python generate.py programmes/*.y*ml"
+layout = "python tools/build_layout.py"
 test = "pytest"
 coverage = "coverage run -m pytest"
 coverage-report = "coverage report -m"
@@ -38,8 +39,8 @@ ruff-check = "ruff check"
 ruff-fix = "ruff check --fix"
 format = "ruff format"
 format-check = "ruff format --check"
-mypy = "mypy generate.py tests scripts"
-compile = "python -m compileall -q generate.py tests scripts"
+mypy = "mypy generate.py tests scripts tools"
+compile = "python -m compileall -q generate.py tests scripts tools"
 static-checks = [
     "compile",
     "format-check",
@@ -62,4 +63,3 @@ pythonpath = ["."]
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-extend-exclude = ["tools/original"]

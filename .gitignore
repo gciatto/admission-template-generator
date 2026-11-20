@@ -3,10 +3,6 @@ __pycache__/
 *.pyc
 dist/
 *.inspect.ndjson
-tools/original/node_modules/
-tools/original/*.xlsx
-tools/original/*.png
-tools/original/metadata.json
 .DS_Store
 
 node_modules/

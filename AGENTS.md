@@ -16,8 +16,8 @@ This repository builds blank applicant evidence workbooks for master's admission
   codes, Unknown or Not applicable. Legends remain visible, read-only, without
   Excel tables or filter buttons.
 - Changes must work with public Python dependencies on GitHub-hosted Ubuntu.
-  `tools/original/` preserves the original private-library layout builder; it is
-  not a dependency of the supported build. Do not vendor its private library.
+- Change the layout through `tools/build_layout.py`, then `uv run poe layout`;
+  never edit the layout workbook by hand. `tests/test_layout.py` must stay green.
 - Keep fixes small. Add a focused unittest for nontrivial behaviour changes.
 - Manage dependencies with uv (`uv add`, `uv add --dev`); never hand-edit `uv.lock`.
 - Run `uv run poe static-checks`, `uv run poe test` and `uv run poe generate`

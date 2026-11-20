@@ -107,16 +107,15 @@ general form designer or automatic admission scoring system.
 
 `layout/applicant-template.xlsx` is the blank, approved layout. The supported
 generator edits that template using public dependencies and preserves its formulas,
-validations and protection. Keep this layout under version control and review any
-structural changes with the tests. Generated outputs are ignored.
+validations and protection. Generated outputs are ignored.
 
-`tools/original/build.mjs` and `tools/original/finalize.py` contain **all original
-layout-generation code**, including its formula self-checks and native protection
-postprocessing. The JavaScript builder requires private `@oai/artifact-tool`
-2.8.188, available in the originating Codex environment. It is retained for
-provenance and layout work, not installed or required in CI. The blank layout is
-the portable source artifact for the supported generator. Original preview PNGs,
-inspection dumps, installed dependencies and application data are not source inputs.
+`tools/build_layout.py` builds that layout from code (sheets, columns, formulas,
+validations, styles and protection; country names are in `tools/countries.json`).
+It is a Python port of the original JavaScript builder. `tests/test_layout.py`
+checks that the builder reproduces the committed layout exactly, and, with
+LibreOffice, recalculates sample inputs to check IDs, durations, cross-sheet
+lookups and carried-forward defaults. To change the layout, edit the builder, run
+`uv run poe layout`, inspect the workbook, and commit both files.
 
 Yellow defaults in later rows are editable formulas linked to the previous row.
 Changing an earlier value updates later linked defaults until an applicant
