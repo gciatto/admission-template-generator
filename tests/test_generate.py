@@ -9,7 +9,8 @@ from xml.etree import ElementTree as ET
 import openpyxl
 import yaml
 
-from generate import LAYOUT, ROOT, build, convert_ods, load_config, verify_ods
+from tools.build_layout import Builder
+from tools.generate import ROOT, build, convert_ods, load_config, verify_ods
 
 CONFIG = ROOT / "programmes/digital-transformation-management.yml"
 SOFFICE = shutil.which("libreoffice") or shutil.which("soffice")
@@ -30,7 +31,7 @@ class GeneratorTests(unittest.TestCase):
         return path
 
     def test_preserve_all_formulas_and_cell_protection(self):
-        base = openpyxl.load_workbook(LAYOUT)
+        base = Builder(self.config).build()
         result = openpyxl.load_workbook(build(CONFIG, self.root))
         for sheet in base:
             if sheet.title.endswith("legend"):

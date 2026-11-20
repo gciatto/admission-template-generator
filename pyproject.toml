@@ -12,7 +12,7 @@ dependencies = [
     "pyyaml==6.0.3",
 ]
 
-# Not a distributable package: generate.py is run directly.
+# Not a distributable package: run the generator with `python -m tools.generate`.
 [tool.uv]
 package = false
 
@@ -28,9 +28,8 @@ dev = [
 ]
 
 [tool.poe.tasks]
-generate = "python generate.py programmes/*.y*ml --ods"
-generate-xlsx = "python generate.py programmes/*.y*ml"
-layout = "python -m tools.build_layout"
+generate = "python -m tools.generate programmes/*.y*ml --ods"
+generate-xlsx = "python -m tools.generate programmes/*.y*ml"
 test = "pytest"
 coverage = "coverage run -m pytest"
 coverage-report = "coverage report -m"
@@ -39,8 +38,8 @@ ruff-check = "ruff check"
 ruff-fix = "ruff check --fix"
 format = "ruff format"
 format-check = "ruff format --check"
-mypy = "mypy generate.py tests scripts tools"
-compile = "python -m compileall -q generate.py tests scripts tools"
+mypy = "mypy tools tests scripts"
+compile = "python -m compileall -q tools tests scripts"
 static-checks = [
     "compile",
     "format-check",
@@ -63,3 +62,16 @@ pythonpath = ["."]
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+
+# Releases: Conventional Commits on main pick the next version (feat = minor, fix = patch,
+# ! = major); CI tags it and attaches the generated workbooks to a GitHub release.
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+tag_format = "v{version}"
+
+[tool.semantic_release.branches.main]
+match = "main"
+
+[tool.semantic_release.publish]
+dist_glob_patterns = ["dist/*.xlsx", "dist/*.ods"]
+upload_to_vcs_release = true

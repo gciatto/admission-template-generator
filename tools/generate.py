@@ -12,21 +12,11 @@ from math import ceil
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
-import openpyxl
 import yaml
-from openpyxl.styles import Alignment
-from openpyxl.workbook.defined_name import DefinedName
 
-ROOT = Path(__file__).resolve().parent
-LAYOUT = ROOT / "layout/applicant-template.xlsx"
-OTHER_GUIDE = "No listed cluster fits. Explain the subject in Other details."
-_REVIEW = "Applicant classifications are subject to committee review."
-SOURCE_NOTES = {
-    "Degree class legend": "Clusters group official Italian degree classes for self-classification. "
-    + _REVIEW,
-    "Exam sector legend": "Clusters group official Italian subject codes (SSD) for "
-    "self-classification. " + _REVIEW,
-}
+from tools.build_layout import NAMES, Builder
+
+ROOT = Path(__file__).resolve().parents[1]
 PALETTE = {
     "input": "FFF2A6",
     "guidance": "DBEAFE",
@@ -121,9 +111,7 @@ def load_config(path):
     colors = config.get("colors", {})
     keys(colors, {"palette", "tabs"}, "colors")
     keys(colors.get("palette", {}), set(PALETTE), "colors.palette")
-    layout = openpyxl.load_workbook(LAYOUT, read_only=True)
-    keys(colors.get("tabs", {}), set(layout.sheetnames), "colors.tabs")
-    layout.close()
+    keys(colors.get("tabs", {}), set(NAMES), "colors.tabs")
     for section in colors.values():
         for name, color in section.items():
             require(
@@ -131,72 +119,6 @@ def load_config(path):
                 f"Invalid color {name}: use '#RRGGBB'",
             )
     return config
-
-
-def set_clusters(workbook, sheet_name, field, legend_name, groups):
-    sheet = workbook[sheet_name]
-    column = next(c.column_letter for c in sheet[9] if c.value == f"{field} *")
-    validation = next(d for d in sheet.data_validations.dataValidation if f"{column}10" in d)
-    name = validation.formula1
-    destination, area = next(workbook.defined_names[name].destinations)
-    values = workbook[destination]
-    old_range = values[area]
-    first = old_range[0][0]
-    for row in old_range:
-        row[0].value = None
-    choices = [g["name"] for g in groups] + ["Other"]
-    for index, choice in enumerate(choices):
-        cell = values.cell(first.row + index, first.column, choice)
-        cell.data_type = "s"
-    new_range = f"'{destination}'!${first.column_letter}${first.row}:${first.column_letter}${first.row + len(choices) - 1}"
-    workbook.defined_names[name] = DefinedName(name, attr_text=new_range)
-    sheet[f"{column}7"] = choices[0]
-    sheet[f"{column}7"].data_type = "s"
-
-    legend = workbook[legend_name]
-    # Keep the approved header/layout, then replace all programme-specific rows and source notes.
-    style = [copy(c._style) for c in legend[7][:5]]
-    for merged in list(legend.merged_cells.ranges):
-        if merged.min_row >= 7:
-            legend.unmerge_cells(str(merged))
-    legend.delete_rows(7, legend.max_row - 6)
-    rows = [
-        [
-            g["name"],
-            ", ".join(c["code"] for c in g["codes"]),
-            "; ".join(c["en"] for c in g["codes"]),
-            "; ".join(c["it"] for c in g["codes"]),
-            g["description"],
-        ]
-        for g in groups
-    ]
-    rows.append(["Other", "", "", "", OTHER_GUIDE])
-    for index, row in enumerate(rows, 7):
-        for col, value in enumerate(row, 1):
-            cell = legend.cell(index, col, value)
-            cell.data_type = "s"
-            cell._style = copy(style[col - 1])
-        legend.row_dimensions[index].height = max(
-            28,
-            max(
-                ceil(
-                    len(str(value))
-                    / max(
-                        1,
-                        legend.column_dimensions[openpyxl.utils.get_column_letter(col)].width
-                        * 1.05,
-                    )
-                )
-                * 13
-                + 6
-                for col, value in enumerate(row, 1)
-            ),
-        )
-    legend.merge_cells(
-        start_row=len(rows) + 9, start_column=1, end_row=len(rows) + 10, end_column=5
-    )
-    legend.cell(len(rows) + 9, 1, SOURCE_NOTES[legend_name])
-    legend.cell(len(rows) + 9, 1).alignment = Alignment(wrap_text=True)
 
 
 def recolor(workbook, colors):
@@ -238,7 +160,7 @@ def recolor(workbook, colors):
 
 def build(config_path, output_dir):
     config = load_config(config_path)
-    workbook = openpyxl.load_workbook(LAYOUT)
+    workbook = Builder(config).build()
     programme = config["programme"]
     workbook.properties.title = f"{programme['name']} — applicant evidence"
     instructions = workbook["Instructions"]
@@ -280,10 +202,6 @@ def build(config_path, output_dir):
                         sheet.row_dimensions[8].height or 44,
                         ceil(len(cell.value) / (width * 1.1)) * 10 + 6,
                     )
-    set_clusters(
-        workbook, "Degrees", "Degree cluster", "Degree class legend", config["degree_classes"]
-    )
-    set_clusters(workbook, "Exams", "Exam cluster", "Exam sector legend", config["exam_sectors"])
     recolor(workbook, config.get("colors", {}))
     workbook.calculation.fullCalcOnLoad = True
     workbook.calculation.forceFullCalc = True

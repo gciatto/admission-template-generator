@@ -1,11 +1,8 @@
-"""Build the blank, approved applicant layout (layout/applicant-template.xlsx).
+"""Build the blank applicant workbook for one programme.
 
-Python port of the original JavaScript builder and its XML post-processor. It writes
-a new workbook only; it never reads application data. generate.py customises the
-result per programme. tests/test_layout.py checks the output against the committed
-layout, so a layout change shows up as a reviewable diff of this file.
-
-    python -m tools.build_layout [OUTPUT]   # default: layout/applicant-template.xlsx
+Python port of the original JavaScript layout builder and its XML post-processor.
+It creates a new workbook and never reads application data. tools/generate.py
+calls it, then applies the programme's texts, deadline and colours.
 """
 
 from __future__ import annotations
@@ -13,7 +10,6 @@ from __future__ import annotations
 import json
 import math
 import re
-import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any, Literal
@@ -30,12 +26,7 @@ from openpyxl.worksheet.protection import SheetProtection
 from openpyxl.worksheet.table import Table, TableColumn, TableStyleInfo
 from openpyxl.worksheet.views import Pane, Selection
 
-from generate import OTHER_GUIDE, SOURCE_NOTES, load_config
-
-ROOT = Path(__file__).resolve().parents[1]
-FILE_LAYOUT = ROOT / "layout/applicant-template.xlsx"
 FILE_COUNTRIES = Path(__file__).with_name("countries.json")
-FILE_PROGRAMME = ROOT / "programmes/digital-transformation-management.yml"
 
 NAMES = [
     "Instructions",
@@ -55,6 +46,14 @@ TABS = "334155 2563EB 7C3AED 9333EA 0F766E C2410C BE185D 4D7C0F A16207 64748B 47
 INPUT, GUIDE, EXAMPLE, FORMULA, HEADER = "FFF2A6", "DBEAFE", "FCE7F3", "E8EDF2", "23374D"
 TEXT, BORDER, ERROR_FILL, ERROR_TEXT = "172033", "AAB6C4", "FCE3E3", "9C1C23"
 SIDES = ("left", "right", "top", "bottom")
+OTHER_GUIDE = "No listed cluster fits. Explain the subject in Other details."
+_REVIEW = "Applicant classifications are subject to committee review."
+SOURCE_NOTES = {
+    "Degree class legend": "Clusters group official Italian degree classes for "
+    "self-classification. " + _REVIEW,
+    "Exam sector legend": "Clusters group official Italian subject codes (SSD) for "
+    "self-classification. " + _REVIEW,
+}
 DEFAULT_PROMPT = "Use the specified format or choose a listed value."
 EMPTY_PROMPT = "Choose a listed value or use the specified format."
 DATE_RULE = {
@@ -264,14 +263,13 @@ def calc(h: str, fn: RowFn, hint: str = "Automatic; do not edit") -> Column:
 
 
 class Builder:
-    def __init__(self) -> None:
+    def __init__(self, config: dict[str, Any]) -> None:
+        """config: a programme validated by tools.generate.load_config."""
         self.sheets = {n: Sheet(n, t) for n, t in zip(NAMES, TABS.split())}
         self.lists: dict[tuple[str, ...], tuple[str, str]] = {}
         self.tables: list[dict[str, Any]] = []
         self.countries = json.loads(FILE_COUNTRIES.read_text(encoding="utf-8")) + ["Other"]
-        # Cluster data has a single source: the default programme. generate.py replaces
-        # it per programme.
-        self.config = load_config(FILE_PROGRAMME)
+        self.config = config
 
     def clusters(self, field: str) -> tuple[list[str], str]:
         """Dropdown values and example for a classification: its clusters, then Other."""
@@ -505,8 +503,11 @@ class Builder:
             s.fmt("A6:E6", fill=HEADER, font={"bold": True, "color": "FFFFFF"}, height=30)
             s.widths.update(A=31, B=25, C=43, D=43, E=62)
             for i, row in enumerate(grouped):
-                longest = max(len(row[2]), len(row[3]))
-                s.fmt(f"A{7 + i}:E{7 + i}", height=max(34, math.ceil(longest / 49) * 14 + 8))
+                # Enough wrapped lines for the longest cell, given each column's width.
+                lines = max(
+                    math.ceil(len(v) / max(1, s.widths[col(j)] * 1.05)) for j, v in enumerate(row)
+                )
+                s.fmt(f"A{7 + i}:E{7 + i}", height=max(28, lines * 13 + 6))
             s.fmt(f"E7:E{6 + n}", fill=GUIDE)
             s.borders(f"A6:E{6 + n}")
             s.merge(f"A{9 + n}:E{10 + n}")
@@ -1497,14 +1498,3 @@ STEPS = [
         "Ask the admissions office for an expanded copy. Capacity: 8 degrees, 200 exams, 30 activities per sheet, 20 language records.",
     ],
 ]
-
-
-def build(output: Path | str = FILE_LAYOUT) -> Path:
-    output = Path(output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    Builder().build().save(output)
-    return output
-
-
-if __name__ == "__main__":
-    print(build(*sys.argv[1:2]))

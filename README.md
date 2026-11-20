@@ -13,7 +13,7 @@ Python 3.11+) and LibreOffice (Calc). On Ubuntu:
 ```sh
 sudo apt-get install libreoffice-calc
 uv sync
-uv run poe generate        # = python generate.py programmes/*.y*ml --ods
+uv run poe generate        # = python -m tools.generate programmes/*.y*ml --ods
 ```
 
 On macOS the generator also detects
@@ -35,8 +35,14 @@ Manage dependencies with `uv add` / `uv add --dev`; never edit `uv.lock` by hand
 Renovate (`renovate.json`) opens dependency update PRs once enabled on the repository.
 
 GitHub Actions tests and builds **all** programme `.yml` / `.yaml` files on pushes,
-pull requests and manual runs. Download `applicant-templates` from the run's
-Artifacts section. This local repository has no remote until one is configured.
+pull requests and manual runs; each run keeps them as the `applicant-templates`
+artifact. On `main`, a passing run also publishes a GitHub release with the `.xlsx`
+and `.ods` files attached, when its commits call for one: commit messages follow
+[Conventional Commits](https://www.conventionalcommits.org/), and
+[python-semantic-release](https://python-semantic-release.readthedocs.io/) derives
+the version (`feat` = minor, `fix` = patch, `!` = major; `chore`, `ci`, `docs`,
+`test`, ... make no release). Only the tag records the version: CI does not commit
+the bump back, so `pyproject.toml` keeps a placeholder version.
 
 ## Configure a programme
 
@@ -83,7 +89,7 @@ colors:
 
 Supported programme properties: `slug`, `name`, `institution`, `academic_year`,
 `url`, `deadline`, `topics`. The full default YAML lists every available palette
-role and tab name. Omitted colour roles preserve the approved layout's colours.
+role and tab name. Omitted colour roles keep the default colours.
 Quote hex colours so YAML does not interpret them as comments. Choose readable
 foreground/background combinations; colour contrast is not automatically assessed.
 
@@ -106,18 +112,15 @@ general form designer or automatic admission scoring system.
 
 ## Layout and provenance
 
-`layout/applicant-template.xlsx` is the blank, approved layout. The supported
-generator edits that template using public dependencies and preserves its formulas,
-validations and protection. Generated outputs are ignored.
-
-`tools/build_layout.py` builds that layout from code (sheets, columns, formulas,
-validations, styles and protection). Country names are in `tools/countries.json`;
-degree and exam clusters come from `programmes/digital-transformation-management.yml`.
-It is a Python port of the original JavaScript builder. `tests/test_layout.py`
-checks that the builder reproduces the committed layout exactly, and, with
-LibreOffice, recalculates sample inputs to check IDs, durations, cross-sheet
-lookups and carried-forward defaults. To change the layout, edit the builder, run
-`uv run poe layout`, inspect the workbook, and commit both files.
+No workbook is tracked. `tools/build_layout.py` builds each programme's workbook
+from code (sheets, columns, formulas, validations, styles, protection, and the
+programme's clusters); `tools/generate.py` then fills in the programme's texts,
+deadline and colours. Country names are in `tools/countries.json`. The builder is
+a Python port of the original JavaScript builder, verified cell for cell against
+the workbook that builder produced before that workbook was removed.
+`tests/test_layout.py` recalculates sample inputs with LibreOffice to check IDs,
+durations, cross-sheet lookups and carried-forward defaults. Generated outputs are
+ignored.
 
 Yellow defaults in later rows are editable formulas linked to the previous row.
 Changing an earlier value updates later linked defaults until an applicant

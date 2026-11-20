@@ -108,3 +108,50 @@ jobs:
             dist/*.xlsx
             dist/*.ods
           if-no-files-found: error
+
+  release:
+    needs:
+      - test
+      - generate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    name: Release
+    concurrency:
+      group: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # semantic-release reads all commits since the last tag
+
+      - name: Download applicant templates
+        uses: actions/download-artifact@v7
+        with:
+          name: applicant-templates
+          path: dist
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Configure Git identity for the release tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # Tags the version only: the pyproject.toml bump is not committed back to main.
+      - name: Tag and create release
+        id: release
+        run: >-
+          uvx --from python-semantic-release==10.7.0 semantic-release -v version
+          --no-commit --no-changelog --skip-build
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Attach workbooks to the release
+        if: steps.release.outputs.released == 'true'
+        run: >-
+          uvx --from python-semantic-release==10.7.0 semantic-release -v publish
+          --tag ${{ steps.release.outputs.tag }}
+        env:
+          GH_TOKEN: ${{ github.token }}

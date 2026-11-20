@@ -5,11 +5,9 @@ from datetime import datetime
 from pathlib import Path
 
 import openpyxl
-from layout_snapshot import diff, snapshot
-from test_generate import SOFFICE
+from test_generate import CONFIG, SOFFICE
 
-from generate import LAYOUT
-from tools.build_layout import build
+from tools.generate import build
 
 
 def headers(ws, row=9):
@@ -22,16 +20,13 @@ class LayoutTests(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
 
-    def test_builder_reproduces_committed_layout(self):
-        # If this fails after an intended change, rebuild: uv run poe layout
-        built = build(self.root / "layout.xlsx")
-        self.assertEqual(diff(snapshot(LAYOUT), snapshot(built)), [])
-
     @unittest.skipUnless(SOFFICE, "LibreOffice not installed")
     def test_formulas_recalculate_as_designed(self):
         # Port of the original builder's self-checks, evaluated by LibreOffice.
+        layout = build(CONFIG, self.root / "layout")
+
         def scenario(name, override):
-            wb = openpyxl.load_workbook(LAYOUT)
+            wb = openpyxl.load_workbook(layout)
             deg, ex, work = wb["Degrees"], wb["Exams"], wb["Work experience"]
             d, e = headers(deg), headers(ex)
             deg["B10"], deg["H10"] = "Test degree", "Graduated"
