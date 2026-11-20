@@ -30,7 +30,7 @@ dev = [
 [tool.poe.tasks]
 generate = "python generate.py programmes/*.y*ml --ods"
 generate-xlsx = "python generate.py programmes/*.y*ml"
-layout = "python tools/build_layout.py"
+layout = "python -m tools.build_layout"
 test = "pytest"
 coverage = "coverage run -m pytest"
 coverage-report = "coverage report -m"

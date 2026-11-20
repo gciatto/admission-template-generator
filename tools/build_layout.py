@@ -5,7 +5,7 @@ a new workbook only; it never reads application data. generate.py customises the
 result per programme. tests/test_layout.py checks the output against the committed
 layout, so a layout change shows up as a reviewable diff of this file.
 
-    python tools/build_layout.py [OUTPUT]   # default: layout/applicant-template.xlsx
+    python -m tools.build_layout [OUTPUT]   # default: layout/applicant-template.xlsx
 """
 
 from __future__ import annotations
@@ -30,9 +30,12 @@ from openpyxl.worksheet.protection import SheetProtection
 from openpyxl.worksheet.table import Table, TableColumn, TableStyleInfo
 from openpyxl.worksheet.views import Pane, Selection
 
+from generate import OTHER_GUIDE, SOURCE_NOTES, load_config
+
 ROOT = Path(__file__).resolve().parents[1]
 FILE_LAYOUT = ROOT / "layout/applicant-template.xlsx"
 FILE_COUNTRIES = Path(__file__).with_name("countries.json")
+FILE_PROGRAMME = ROOT / "programmes/digital-transformation-management.yml"
 
 NAMES = [
     "Instructions",
@@ -260,17 +263,20 @@ def calc(h: str, fn: RowFn, hint: str = "Automatic; do not edit") -> Column:
     return {"h": h, "fn": fn, "hint": hint, "type": "formula", "e": "Calculated"}
 
 
-def example(e: Any) -> Any:
-    # The original builder stored leading-zero examples with a literal apostrophe.
-    return "'" + e if isinstance(e, str) and re.fullmatch(r"0\d+", e) else e
-
-
 class Builder:
     def __init__(self) -> None:
         self.sheets = {n: Sheet(n, t) for n, t in zip(NAMES, TABS.split())}
         self.lists: dict[tuple[str, ...], tuple[str, str]] = {}
         self.tables: list[dict[str, Any]] = []
         self.countries = json.loads(FILE_COUNTRIES.read_text(encoding="utf-8")) + ["Other"]
+        # Cluster data has a single source: the default programme. generate.py replaces
+        # it per programme.
+        self.config = load_config(FILE_PROGRAMME)
+
+    def clusters(self, field: str) -> tuple[list[str], str]:
+        """Dropdown values and example for a classification: its clusters, then Other."""
+        names = [g["name"] for g in self.config[field]] + ["Other"]
+        return names, names[0]
 
     def add_list(self, values: list[str]) -> str:
         key = tuple(values)
@@ -311,7 +317,7 @@ class Builder:
         s.tables.append((name, f"A{header}:{last}{end}", "TableStyleLight1"))
         sample, hints = start - 3, start - 2
         s.fmt(f"A{sample}:{last}{sample}", numfmt="@")
-        s.put(f"A{sample}", [[example(x["e"]) for x in cols]])
+        s.put(f"A{sample}", [[x["e"] for x in cols]])
         s.fmt(
             f"A{sample}:{last}{sample}",
             fill=EXAMPLE,
@@ -458,9 +464,9 @@ class Builder:
         s.fmt("C5:H5", fill=GUIDE)
 
     def legends(self) -> None:
-        for sheet, rows, guides in [
-            ("Degree class legend", DEGREE_ROWS, DEGREE_GUIDES),
-            ("Exam sector legend", SECTOR_ROWS, SECTOR_GUIDES),
+        for sheet, groups in [
+            ("Degree class legend", self.config["degree_classes"]),
+            ("Exam sector legend", self.config["exam_sectors"]),
         ]:
             s = self.sheets[sheet]
             heading(
@@ -470,18 +476,17 @@ class Builder:
                 "the closest cluster from these descriptions. Use Other only if no cluster fits.",
                 "E",
             )
-            grouped = []
-            for cluster in clusters(rows):
-                members = [r for r in rows if r[1] == cluster and r[0] != "Other"]
-                grouped.append(
-                    [
-                        cluster,
-                        ", ".join(r[0] for r in members),
-                        "; ".join(r[2] for r in members),
-                        "; ".join(r[3] for r in members),
-                        guides[cluster],
-                    ]
-                )
+            grouped = [
+                [
+                    g["name"],
+                    ", ".join(c["code"] for c in g["codes"]),
+                    "; ".join(c["en"] for c in g["codes"]),
+                    "; ".join(c["it"] for c in g["codes"]),
+                    g["description"],
+                ]
+                for g in groups
+            ]
+            grouped.append(["Other", "", "", "", OTHER_GUIDE])
             n = len(grouped)
             s.put(
                 "A6",
@@ -507,15 +512,7 @@ class Builder:
             s.merge(f"A{9 + n}:E{10 + n}")
             s.put(
                 f"A{9 + n}",
-                [
-                    [
-                        (
-                            "Source: scripts/score_degrees/rubric.yaml. Cluster descriptions are "
-                            "guidance for applicant self-classification; the committee verifies "
-                            "the selection."
-                        )
-                    ]
-                ],
+                [[SOURCE_NOTES[sheet]]],
             )
             s.fmt(f"A{9 + n}:E{10 + n}", wrap=True)
             s.freeze = 6
@@ -532,7 +529,7 @@ class Builder:
         p.put(
             "A6", [["Field", "Your answer", "Expected format / guidance", "Example (do not copy)"]]
         )
-        p.put("A7", [[x[0], None, x[2], example(x[1])] for x in PERSONAL])
+        p.put("A7", [[x[0], None, x[2], x[1]] for x in PERSONAL])
         p.fmt(
             "A6:D35",
             font={"name": "Arial", "size": 11, "color": TEXT},
@@ -649,8 +646,7 @@ class Builder:
             ),
             choice(
                 "Degree cluster",
-                clusters(DEGREE_ROWS),
-                "Computing & information engineering",
+                *self.clusters("degree_classes"),
                 "See Degree class legend: use the cluster matching your official code, or the closest description if unlabelled.",
                 True,
             ),
@@ -763,8 +759,7 @@ class Builder:
             choice("Honours", honours, "No"),
             choice(
                 "Exam cluster",
-                clusters(SECTOR_ROWS),
-                "Computer science",
+                *self.clusters("exam_sectors"),
                 "See Exam sector legend: use the cluster matching your official SSD, or the closest description if unlabelled.",
                 True,
             ),
@@ -1400,204 +1395,6 @@ def other_details() -> Column:
     return text("Other details", "", "Required when any category is Other.")
 
 
-def clusters(rows: list[list[str]]) -> list[str]:
-    seen = list(dict.fromkeys(r[1] for r in rows))
-    return [x for x in seen if x not in ("Unknown", "Not applicable")]
-
-
-# Degree-class and discipline dictionaries reproduce the original committee rubric.
-DEGREE_ROWS = [
-    [
-        "L-16",
-        "Economics & business",
-        "Administration and organisation sciences",
-        "Scienze dell'amministrazione e dell'organizzazione",
-        "Public administration, organisational processes, public services and management.",
-    ],
-    [
-        "L-18",
-        "Economics & business",
-        "Economics and business management sciences",
-        "Scienze dell'economia e della gestione aziendale",
-        "Accounting, business administration, finance, marketing and company management.",
-    ],
-    [
-        "L-33",
-        "Economics & business",
-        "Economic sciences",
-        "Scienze economiche",
-        "Economic theory, markets, economic policy and quantitative economic analysis.",
-    ],
-    [
-        "L-41",
-        "Statistics",
-        "Statistics",
-        "Statistica",
-        "Probability, statistical inference, data analysis and statistical modelling.",
-    ],
-    [
-        "L-31",
-        "Computing & information engineering",
-        "Computer science and technologies",
-        "Scienze e tecnologie informatiche",
-        "Programming, algorithms, software, databases, computing systems and theory.",
-    ],
-    [
-        "L-8",
-        "Computing & information engineering",
-        "Information engineering",
-        "Ingegneria dell'informazione",
-        "Computer, electronic, telecommunications and automation engineering.",
-    ],
-    [
-        "L-9",
-        "Industrial engineering",
-        "Industrial engineering",
-        "Ingegneria industriale",
-        "Mechanical, energy, manufacturing, chemical and other industrial engineering.",
-    ],
-    [
-        "Other",
-        "Other",
-        "Other qualification",
-        "Altro titolo",
-        "Specify the official class or qualification in Other details.",
-    ],
-    [
-        "Unknown",
-        "Unknown",
-        "Class not known",
-        "Classe non nota",
-        "Use if the official class is unknown. Do not guess.",
-    ],
-    [
-        "Not applicable",
-        "Not applicable",
-        "No Italian degree class",
-        "Nessuna classe italiana",
-        "Use for a foreign qualification without an official Italian degree class. Select a suggested cluster separately.",
-    ],
-]
-SECTOR_ROWS = [
-    [
-        "SECS-P/07",
-        "Business & management",
-        "Business administration and accounting",
-        "Economia aziendale",
-        "Accounting, financial statements, management accounting and company administration.",
-    ],
-    [
-        "SECS-P/08",
-        "Business & management",
-        "Management",
-        "Economia e gestione delle imprese",
-        "Business strategy, marketing, operations and company management.",
-    ],
-    [
-        "SECS-P/09",
-        "Business & management",
-        "Corporate finance",
-        "Finanza aziendale",
-        "Company valuation, investment decisions, financing and capital structure.",
-    ],
-    [
-        "SECS-P/10",
-        "Business & management",
-        "Organisation and human resources",
-        "Organizzazione aziendale",
-        "Organisation design, people management and organisational behaviour.",
-    ],
-    [
-        "SECS-P/11",
-        "Business & management",
-        "Financial markets and institutions",
-        "Economia degli intermediari finanziari",
-        "Banking, financial intermediaries, financial services and markets.",
-    ],
-    [
-        "INF/01",
-        "Computer science",
-        "Computer science",
-        "Informatica",
-        "Algorithms, programming, software, databases, AI and computing foundations.",
-    ],
-    [
-        "ING-INF/05",
-        "Computer science",
-        "Information processing systems",
-        "Sistemi di elaborazione delle informazioni",
-        "Computer systems, software engineering, information systems and computing architecture.",
-    ],
-    [
-        "SECS-P/01",
-        "Economics",
-        "Economics",
-        "Economia politica",
-        "Microeconomics, macroeconomics, economic theory and market behaviour.",
-    ],
-    [
-        "SECS-P/02",
-        "Economics",
-        "Economic policy",
-        "Politica economica",
-        "Economic policy design and analysis, growth and policy interventions.",
-    ],
-    [
-        "SECS-P/03",
-        "Economics",
-        "Public economics",
-        "Scienza delle finanze",
-        "Taxation, public spending, welfare and public-sector economics.",
-    ],
-    [
-        "SECS-P/05",
-        "Economics",
-        "Econometrics",
-        "Econometria",
-        "Statistical estimation, causal inference and quantitative models for economics.",
-    ],
-    [
-        "SECS-P/12",
-        "Economics",
-        "Economic history",
-        "Storia economica",
-        "Historical development of economies, firms, institutions and economic systems.",
-    ],
-    [
-        "Other",
-        "Other",
-        "Other discipline",
-        "Altro settore",
-        "Use for any sector outside this rubric, including newer or foreign codes. Enter its code and name in Other details.",
-    ],
-    [
-        "Unknown",
-        "Unknown",
-        "Discipline uncertain",
-        "Settore non noto",
-        "Use if you cannot identify the discipline. The committee will review it.",
-    ],
-    [
-        "Not applicable",
-        "Not applicable",
-        "No classification",
-        "Non applicabile",
-        "Use only where a disciplinary classification does not apply.",
-    ],
-]
-DEGREE_GUIDES = {
-    "Economics & business": "Administration, accounting, finance, business management, economic theory and markets.",
-    "Statistics": "Probability, statistical inference, data analysis and statistical modelling.",
-    "Computing & information engineering": "Programming, algorithms, software, databases, computer systems, electronics, telecommunications and automation.",
-    "Industrial engineering": "Mechanical, energy, manufacturing, chemical and other industrial engineering.",
-    "Other": "No cluster above adequately describes this degree. Explain its field in Other details.",
-}
-SECTOR_GUIDES = {
-    "Business & management": "Accounting, company administration, strategy, marketing, operations, corporate finance, organisation, human resources, banking and financial institutions.",
-    "Computer science": "Programming, algorithms, software engineering, databases, AI, computer architecture and information processing systems.",
-    "Economics": "Microeconomics, macroeconomics, economic policy, taxation, public spending, econometrics and economic history.",
-    "Other": "No cluster above adequately describes this exam. Explain its subject in Other details.",
-}
 _ABBREV = (
     "Write in full; expand national abbreviations, e.g. MD → Mohammed, even if used on your ID."
 )

@@ -110,7 +110,8 @@ generator edits that template using public dependencies and preserves its formul
 validations and protection. Generated outputs are ignored.
 
 `tools/build_layout.py` builds that layout from code (sheets, columns, formulas,
-validations, styles and protection; country names are in `tools/countries.json`).
+validations, styles and protection). Country names are in `tools/countries.json`;
+degree and exam clusters come from `programmes/digital-transformation-management.yml`.
 It is a Python port of the original JavaScript builder. `tests/test_layout.py`
 checks that the builder reproduces the committed layout exactly, and, with
 LibreOffice, recalculates sample inputs to check IDs, durations, cross-sheet

@@ -19,6 +19,14 @@ from openpyxl.workbook.defined_name import DefinedName
 
 ROOT = Path(__file__).resolve().parent
 LAYOUT = ROOT / "layout/applicant-template.xlsx"
+OTHER_GUIDE = "No listed cluster fits. Explain the subject in Other details."
+_REVIEW = "Applicant classifications are subject to committee review."
+SOURCE_NOTES = {
+    "Degree class legend": "Clusters group official Italian degree classes for self-classification. "
+    + _REVIEW,
+    "Exam sector legend": "Clusters group official Italian subject codes (SSD) for "
+    "self-classification. " + _REVIEW,
+}
 PALETTE = {
     "input": "FFF2A6",
     "guidance": "DBEAFE",
@@ -156,9 +164,7 @@ def set_clusters(workbook, sheet_name, field, legend_name, groups):
         ]
         for g in groups
     ]
-    rows.append(
-        ["Other", "", "", "", "No listed cluster fits. Explain the subject in Other details."]
-    )
+    rows.append(["Other", "", "", "", OTHER_GUIDE])
     for index, row in enumerate(rows, 7):
         for col, value in enumerate(row, 1):
             cell = legend.cell(index, col, value)
@@ -183,11 +189,7 @@ def set_clusters(workbook, sheet_name, field, legend_name, groups):
     legend.merge_cells(
         start_row=len(rows) + 9, start_column=1, end_row=len(rows) + 10, end_column=5
     )
-    legend.cell(
-        len(rows) + 9,
-        1,
-        "Source: this programme's YAML configuration. Applicant classifications are subject to committee review.",
-    )
+    legend.cell(len(rows) + 9, 1, SOURCE_NOTES[legend_name])
     legend.cell(len(rows) + 9, 1).alignment = Alignment(wrap_text=True)
 
 
