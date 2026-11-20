@@ -41,7 +41,8 @@ Artifacts section. This local repository has no remote until one is configured.
 ## Configure a programme
 
 Copy `programmes/digital-transformation-management.yml` and edit it. Use a unique
-lowercase, hyphenated `programme.slug`: it determines output filenames.
+lowercase, hyphenated `programme.slug`: it determines output filenames. An optional
+`academic_year` such as `'2027/28'` adds `-ay27-28` to them.
 
 ```yaml
 programme:

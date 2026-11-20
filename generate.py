@@ -79,6 +79,12 @@ def load_config(path):
     for field in ("institution", "academic_year", "url"):
         if field in programme:
             string(programme[field], f"programme.{field}")
+    if "academic_year" in programme:
+        year = re.fullmatch(r"20(\d\d)/(\d\d)", programme["academic_year"])
+        require(
+            year is not None and int(year[2]) == (int(year[1]) + 1) % 100,
+            "programme.academic_year must look like 2027/28",
+        )
     topics = programme.get("topics")
     require(isinstance(topics, list) and bool(topics), "programme.topics must be a non-empty list")
     for topic in topics:
@@ -283,7 +289,9 @@ def build(config_path, output_dir):
     workbook.calculation.forceFullCalc = True
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    target = output_dir / f"{programme['slug']}-applicant-template.xlsx"
+    year = programme.get("academic_year")
+    suffix = f"-ay{year[2:].replace('/', '-')}" if year else ""
+    target = output_dir / f"{programme['slug']}{suffix}-applicant-template.xlsx"
     # Save atomically so a failed generation never replaces a previous complete workbook.
     with tempfile.TemporaryDirectory(dir=output_dir) as staging:
         temp = Path(staging) / target.name

@@ -1,0 +1,94 @@
+# Source: 2026/27 call, curriculum "Intelligent Embedded Systems" (inter-class LM-18/LM-32),
+# local Unibo track; review against the 2027/28 call once published (deadline left unset).
+# Curricular requirements (call §2.2): degree in L-8 or L-31, OR at least 42 CFU in
+# INF/01, ING-INF/05, MAT/01-MAT/09, FIS/01-FIS/03, of which at least 18 in INF/01 + ING-INF/05.
+# The call still uses the "old" SSD codes (pre DM 639/2024).
+programme:
+  slug: computer-science-engineering-ies
+  name: Computer Science and Engineering — Intelligent Embedded Systems
+  institution: Alma Mater Studiorum — Università di Bologna
+  academic_year: '2027/28'
+  url: https://corsi.unibo.it/2cycle/ComputerScienceEngineering/how-to-enrol
+  topics:
+  - programming, object-oriented programming and software engineering
+  - algorithms and data structures
+  - computer architecture
+  - operating systems
+  - databases
+  - networking, internet and web technologies
+  - mathematics and statistics
+degree_classes:
+- name: Computing & information engineering
+  description: Degree classes that directly satisfy the curricular requirements (programming, algorithms,
+    software, computer systems, electronics, telecommunications and automation).
+  codes:
+  - code: L-31
+    en: Computer science and technologies
+    it: Scienze e tecnologie informatiche
+  - code: L-8
+    en: Information engineering
+    it: Ingegneria dell'informazione
+- name: Mathematics & physics
+  description: Mathematical or physical sciences; eligible only through the 42-CFU route (at least 18
+    CFU in computer science sectors).
+  codes:
+  - code: L-35
+    en: Mathematical sciences
+    it: Scienze matematiche
+  - code: L-30
+    en: Physical sciences and technologies
+    it: Scienze e tecnologie fisiche
+exam_sectors:
+- name: Computer science
+  description: Programming, algorithms, software engineering, databases, operating systems, networks,
+    computer architecture and information processing systems. At least 18 CFU required.
+  codes:
+  - code: INF/01
+    en: Computer science
+    it: Informatica
+  - code: ING-INF/05
+    en: Information processing systems
+    it: Sistemi di elaborazione delle informazioni
+- name: Mathematics
+  description: Logic, algebra, geometry, analysis, probability and mathematical statistics, numerical
+    analysis and operations research.
+  codes:
+  - code: MAT/01
+    en: Mathematical logic
+    it: Logica matematica
+  - code: MAT/02
+    en: Algebra
+    it: Algebra
+  - code: MAT/03
+    en: Geometry
+    it: Geometria
+  - code: MAT/04
+    en: Complementary mathematics
+    it: Matematiche complementari
+  - code: MAT/05
+    en: Mathematical analysis
+    it: Analisi matematica
+  - code: MAT/06
+    en: Probability and mathematical statistics
+    it: Probabilità e statistica matematica
+  - code: MAT/07
+    en: Mathematical physics
+    it: Fisica matematica
+  - code: MAT/08
+    en: Numerical analysis
+    it: Analisi numerica
+  - code: MAT/09
+    en: Operations research
+    it: Ricerca operativa
+- name: Physics
+  description: Experimental, theoretical and matter physics.
+  codes:
+  - code: FIS/01
+    en: Experimental physics
+    it: Fisica sperimentale
+  - code: FIS/02
+    en: Theoretical physics, mathematical models and methods
+    it: Fisica teorica, modelli e metodi matematici
+  - code: FIS/03
+    en: Physics of matter
+    it: Fisica della materia

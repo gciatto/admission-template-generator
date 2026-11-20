@@ -68,12 +68,15 @@ class GeneratorTests(unittest.TestCase):
             name="Data Science",
             topics=["machine learning"],
             deadline="2027-05-20",
+            academic_year="2027/28",
         )
         cfg["degree_classes"] = [cfg["degree_classes"][1]]
         cfg["exam_sectors"] = [cfg["exam_sectors"][1]]
         cfg["colors"]["palette"].update(input="#E0F0D0", error_fill="#FFCCCC", border="#112233")
         cfg["colors"]["tabs"]["Degrees"] = "#AA5500"
-        workbook = openpyxl.load_workbook(build(self.write_config(cfg), self.root))
+        target = build(self.write_config(cfg), self.root)
+        self.assertEqual(target.name, "data-science-ay27-28-applicant-template.xlsx")
+        workbook = openpyxl.load_workbook(target)
         self.assertEqual(workbook["Instructions"]["A2"].value, "Data Science")
         self.assertEqual(workbook["Degrees"].sheet_properties.tabColor.rgb[-6:], "AA5500")
         self.assertEqual(workbook["Degrees"]["B10"].fill.fgColor.rgb[-6:], "E0F0D0")
@@ -127,6 +130,9 @@ class GeneratorTests(unittest.TestCase):
         variants.append(bad)
         bad = deepcopy(self.config)
         bad["colours"] = {}
+        variants.append(bad)
+        bad = deepcopy(self.config)
+        bad["programme"]["academic_year"] = "2027/29"
         variants.append(bad)
         for config in variants:
             with self.subTest(config=config), self.assertRaises(ValueError):
